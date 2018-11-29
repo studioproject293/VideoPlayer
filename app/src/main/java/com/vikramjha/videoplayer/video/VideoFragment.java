@@ -142,7 +142,7 @@ public class VideoFragment extends BaseFragment implements IVideoInterface.View,
     @Override
     public void onResume() {
         super.onResume();
-        presenter.getRelatedVideos(video);
+        presenter.getRelatedVideos(this,video);
         if (player == null) {
             initializePlayer();
         }
@@ -165,7 +165,7 @@ public class VideoFragment extends BaseFragment implements IVideoInterface.View,
                 releasePlayer();
                 video = (VideoList) data;
                 initializePlayer();
-                presenter.getRelatedVideos(video);
+                presenter.getRelatedVideos(this, video);
                 break;
         }
     }

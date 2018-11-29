@@ -1,26 +1,25 @@
 package com.vikramjha.videoplayer.video;
 
 import android.app.Activity;
-import android.util.Log;
 import android.view.View;
 
 import com.vikramjha.videoplayer.VideoApplication;
+import com.vikramjha.videoplayer.VideoListApi;
 import com.vikramjha.videoplayer.cache.AppCache;
 import com.vikramjha.videoplayer.pojo.VideoList;
-import com.google.firebase.database.DataSnapshot;
-import com.google.firebase.database.DatabaseError;
-import com.google.firebase.database.DatabaseReference;
-import com.google.firebase.database.FirebaseDatabase;
-import com.google.firebase.database.GenericTypeIndicator;
-import com.google.firebase.database.ValueEventListener;
+import com.vikramjha.videoplayer.utils.utility;
 
 import java.util.ArrayList;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
 
 public class VideoPresenter implements IVideoInterface.Presenter {
 
     IVideoInterface.View view;
     View rootView;
-
+    VideoListApi videoListApi;
 
     public VideoPresenter(IVideoInterface.View view) {
         this.view = view;
@@ -33,35 +32,33 @@ public class VideoPresenter implements IVideoInterface.Presenter {
     }
 
     @Override
-    public void getRelatedVideos(final VideoList video) {
+    public void getRelatedVideos(VideoFragment videoFragment, final VideoList video) {
         final ArrayList<VideoList> videoLists = AppCache.getInstance().getVideoLists();
         if (videoLists != null && videoLists.size() > 0) {
             ArrayList<VideoList> relatedList = new ArrayList<>(videoLists);
             relatedList.remove(video);
             view.setAdapterData(relatedList);
         } else {
-            final FirebaseDatabase database = FirebaseDatabase.getInstance();
-            final DatabaseReference myRef = database.getReference("VideoList");
-            myRef.addValueEventListener(new ValueEventListener() {
+            videoListApi = utility.getRetrofit(videoFragment.activity).create(VideoListApi.class);
+            Call<ArrayList<VideoList>> response = videoListApi.videoListResponse("pretty");
+            response.enqueue(new Callback<ArrayList<VideoList>>() {
+
                 @Override
-                public void onDataChange(DataSnapshot dataSnapshot) {
-                    // This method is called once with the initial value and again
-                    // whenever data at this location is updated.
-                    GenericTypeIndicator<ArrayList<VideoList>> typeIndicator = new GenericTypeIndicator<ArrayList<VideoList>>() {
-                    };
-                    ArrayList<VideoList> videos = dataSnapshot.getValue(typeIndicator);
-                    AppCache.getInstance().setVideoLists(videos);
-                    ArrayList<VideoList> relatedList = new ArrayList<>(videoLists);
-                    relatedList.remove(video);
-                    view.setAdapterData(relatedList);
+                public void onResponse(Call<ArrayList<VideoList>> call, Response<ArrayList<VideoList>> response) {
+                    if (response.isSuccessful()) {
+                        ArrayList<VideoList> videos = response.body();
+                        AppCache.getInstance().setVideoLists(videos);
+                        ArrayList<VideoList> relatedList = new ArrayList<>(videoLists);
+                        relatedList.remove(video);
+                        view.setAdapterData(relatedList);
+                    }
                 }
 
                 @Override
-                public void onCancelled(DatabaseError error) {
-                    // Failed to read value
-                    Log.w("TAG", "Failed to read value.", error.toException());
+                public void onFailure(retrofit2.Call<ArrayList<VideoList>> call, Throwable t) {
                     view.errorMessage("Data Fetching Error");
                 }
+
             });
         }
     }

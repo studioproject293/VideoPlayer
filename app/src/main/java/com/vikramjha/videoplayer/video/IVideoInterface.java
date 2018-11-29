@@ -16,7 +16,7 @@ public interface IVideoInterface {
     interface Presenter extends BasePresenter {
         void getData(Activity context);
 
-        void getRelatedVideos(VideoList video);
+        void getRelatedVideos(VideoFragment videoFragment, VideoList video);
 
         void updateVideoPosition(VideoList list);
     }
